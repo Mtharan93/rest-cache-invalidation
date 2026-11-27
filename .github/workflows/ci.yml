@@ -84,6 +84,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Install @wordpress/env
+        id: wp-env-install
         run: npm install -g @wordpress/env
 
       - name: Start wp-env
@@ -104,5 +105,5 @@ jobs:
             --no-coverage
 
       - name: Stop wp-env
-        if: always()
+        if: ${{ always() && steps.wp-env-install.outcome == 'success' }}
         run: wp-env stop
