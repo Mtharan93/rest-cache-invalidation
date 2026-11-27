@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Object_Cache_Store
+ * Class Object_Cache_Store.
  */
 class Object_Cache_Store implements Cache_Store {
 
@@ -37,21 +37,36 @@ class Object_Cache_Store implements Cache_Store {
 	/**
 	 * Option/cache key that holds hit/miss counters.
 	 */
-	private const STATS_KEY = 'rci_stats';
+	private const STATS_KEY = 'rcin_stats';
 
-	/** @inheritDoc */
+	/**
+	 * Retrieve a cached value.
+	 *
+	 * @param string $key Cache key.
+	 * @return mixed Cached value or false on miss.
+	 */
 	public function get( string $key ): mixed {
-		$value = wp_cache_get( $key, self::GROUP );
-
-		return $value;
+		return wp_cache_get( $key, self::GROUP );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Store a value in the cache.
+	 *
+	 * @param string $key   Cache key.
+	 * @param mixed  $value Value to store. Must be serialisable.
+	 * @param int    $ttl   Time to live in seconds. 0 means no expiry.
+	 * @return bool True on success, false on failure.
+	 */
 	public function set( string $key, mixed $value, int $ttl = 0 ): bool {
 		return wp_cache_set( $key, $value, self::GROUP, $ttl );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Delete a single entry.
+	 *
+	 * @param string $key Cache key.
+	 * @return bool True on success.
+	 */
 	public function delete( string $key ): bool {
 		return wp_cache_delete( $key, self::GROUP );
 	}
@@ -63,7 +78,7 @@ class Object_Cache_Store implements Cache_Store {
 	 * (WP 6.1+). We fall back to wp_cache_flush() — which clears the whole
 	 * object cache — only as a last resort, and we document this limitation.
 	 *
-	 * @inheritDoc
+	 * @return bool True on success.
 	 */
 	public function flush(): bool {
 		if ( function_exists( 'wp_cache_flush_group' ) ) {
@@ -77,7 +92,11 @@ class Object_Cache_Store implements Cache_Store {
 		return wp_cache_flush();
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Return aggregate statistics.
+	 *
+	 * @return array{hits: int, misses: int, group_versions: array<string, int>} Cache statistics.
+	 */
 	public function stats(): array {
 		$raw = wp_cache_get( self::STATS_KEY, self::META_GROUP );
 
@@ -95,12 +114,20 @@ class Object_Cache_Store implements Cache_Store {
 		);
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Increment the hit counter.
+	 *
+	 * @return void
+	 */
 	public function increment_hits(): void {
 		$this->increment_stat( 'hits' );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Increment the miss counter.
+	 *
+	 * @return void
+	 */
 	public function increment_misses(): void {
 		$this->increment_stat( 'misses' );
 	}
@@ -108,13 +135,13 @@ class Object_Cache_Store implements Cache_Store {
 	/**
 	 * Read the current group version counters.
 	 *
-	 * @return array<string, int>
+	 * @return array<string, int> Map of group name to version number.
 	 */
 	public function get_group_versions(): array {
 		$versions = array();
 		foreach ( Invalidator::GROUPS as $group ) {
-			$v              = wp_cache_get( 'rci_v_' . $group, self::META_GROUP );
-			$versions[$group] = is_numeric( $v ) ? (int) $v : 1;
+			$v                  = wp_cache_get( 'rcin_v_' . $group, self::META_GROUP );
+			$versions[ $group ] = is_numeric( $v ) ? (int) $v : 1;
 		}
 		return $versions;
 	}
@@ -123,10 +150,10 @@ class Object_Cache_Store implements Cache_Store {
 	 * Get the current version for a single group.
 	 *
 	 * @param string $group Group name.
-	 * @return int
+	 * @return int Current group version.
 	 */
 	public function get_group_version( string $group ): int {
-		$v = wp_cache_get( 'rci_v_' . $group, self::META_GROUP );
+		$v = wp_cache_get( 'rcin_v_' . $group, self::META_GROUP );
 		return is_numeric( $v ) ? (int) $v : 1;
 	}
 
@@ -139,7 +166,7 @@ class Object_Cache_Store implements Cache_Store {
 	public function bump_group_version( string $group ): int {
 		$current = $this->get_group_version( $group );
 		$next    = $current + 1;
-		wp_cache_set( 'rci_v_' . $group, $next, self::META_GROUP, 0 );
+		wp_cache_set( 'rcin_v_' . $group, $next, self::META_GROUP, 0 );
 		return $next;
 	}
 

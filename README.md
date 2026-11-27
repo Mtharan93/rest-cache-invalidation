@@ -74,7 +74,7 @@ rest_pre_dispatch filter
 ### Cache Key
 
 ```
-rci/{group_version}/{namespace_hash}/{route_hash}/{params_hash}
+rcin/{group_version}/{namespace_hash}/{route_hash}/{params_hash}
 ```
 
 | Segment | Value |
@@ -182,7 +182,7 @@ happen to share the same key structure.
    cache after each invalidation.
 
 5. **wp/v2 namespace only.** Custom REST namespaces are not cached by default.
-   This can be changed via the `rci_cache_key` / `rci_cache_skip` filters.
+   This can be changed via the `rcin_cache_key` / `rcin_cache_skip` filters.
 
 6. **No benchmark numbers are included.** The performance impact is entirely
    dependent on your server, database, and object-cache setup. If you need
@@ -239,12 +239,12 @@ wp-env destroy
 
 **Integration tests** (requires wp-env running):
 ```bash
-wp-env run tests-cli ./vendor/bin/phpunit --testsuite integration
+wp-env run tests-cli --env-cwd=wp-content/plugins/rest-cache-invalidation ./vendor/bin/phpunit --testsuite integration
 ```
 
 **All tests**:
 ```bash
-wp-env run tests-cli ./vendor/bin/phpunit
+wp-env run tests-cli --env-cwd=wp-content/plugins/rest-cache-invalidation ./vendor/bin/phpunit
 ```
 
 **PHPCS lint**:
@@ -263,18 +263,18 @@ All configuration is via PHP constants and WordPress filters.
 
 | Constant | Type | Default | Description |
 |----------|------|---------|-------------|
-| `RCI_ENABLED` | bool | `true` | Set to `false` to disable the plugin entirely without deactivating it |
-| `RCI_TTL` | int | `300` | Cache time-to-live in seconds |
+| `RCIN_ENABLED` | bool | `true` | Set to `false` to disable the plugin entirely without deactivating it |
+| `RCIN_TTL` | int | `300` | Cache time-to-live in seconds |
 
 ### Filters
 
-#### `rci_cache_skip`
+#### `rcin_cache_skip`
 
 Return `true` to bypass caching for a specific request.
 
 ```php
 // Don't cache the /wp/v2/users endpoint at all.
-add_filter( 'rci_cache_skip', function ( bool $skip, WP_REST_Request $request ): bool {
+add_filter( 'rcin_cache_skip', function ( bool $skip, WP_REST_Request $request ): bool {
     if ( str_starts_with( $request->get_route(), '/wp/v2/users' ) ) {
         return true;
     }
@@ -282,24 +282,24 @@ add_filter( 'rci_cache_skip', function ( bool $skip, WP_REST_Request $request ):
 }, 10, 2 );
 ```
 
-#### `rci_cache_key`
+#### `rcin_cache_key`
 
 Modify the computed cache key. Useful for adding locale or A/B segments.
 
 ```php
 // Add the current locale to separate caches per language.
-add_filter( 'rci_cache_key', function ( string $key, WP_REST_Request $request ): string {
+add_filter( 'rcin_cache_key', function ( string $key, WP_REST_Request $request ): string {
     return $key . '/' . get_locale();
 }, 10, 2 );
 ```
 
-#### `rci_cache_ttl`
+#### `rcin_cache_ttl`
 
 Override the TTL per-request.
 
 ```php
 // Cache post-list responses for 10 minutes, everything else uses the default.
-add_filter( 'rci_cache_ttl', function ( int $ttl, WP_REST_Request $request ): int {
+add_filter( 'rcin_cache_ttl', function ( int $ttl, WP_REST_Request $request ): int {
     if ( '/wp/v2/posts' === $request->get_route() ) {
         return 600;
     }

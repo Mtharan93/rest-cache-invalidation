@@ -20,55 +20,60 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RCI_VERSION', '0.1.0' );
-define( 'RCI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'RCI_PLUGIN_FILE', __FILE__ );
+define( 'RCIN_VERSION', '0.1.0' );
+define( 'RCIN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'RCIN_PLUGIN_FILE', __FILE__ );
 
 /**
  * PSR-4 autoloader for the RestCacheInvalidation namespace.
  *
  * Maps RestCacheInvalidation\Foo\Bar → src/Foo/Bar.php.
  */
-spl_autoload_register( static function ( string $class ): void {
-	$prefix   = 'RestCacheInvalidation\\';
-	$base_dir = RCI_PLUGIN_DIR . 'src/';
+spl_autoload_register(
+	static function ( string $class_name ): void {
+		$prefix   = 'RestCacheInvalidation\\';
+		$base_dir = RCIN_PLUGIN_DIR . 'src/';
 
-	if ( ! str_starts_with( $class, $prefix ) ) {
-		return;
+		if ( ! str_starts_with( $class_name, $prefix ) ) {
+			return;
+		}
+
+		$relative = substr( $class_name, strlen( $prefix ) );
+		$file     = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
+
+		if ( file_exists( $file ) ) {
+			require $file;
+		}
 	}
-
-	$relative  = substr( $class, strlen( $prefix ) );
-	$file      = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
-
-	if ( file_exists( $file ) ) {
-		require $file;
-	}
-} );
+);
 
 /**
  * Bootstrap the plugin after all plugins are loaded so object-cache status
  * is reliable (persistent object cache plugins register themselves on
  * muplugins_loaded / plugins_loaded).
  */
-add_action( 'plugins_loaded', static function (): void {
-	// Allow disabling the plugin entirely via constant.
-	if ( defined( 'RCI_ENABLED' ) && ! RCI_ENABLED ) {
-		return;
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		// Allow disabling the plugin entirely via constant.
+		if ( defined( 'RCIN_ENABLED' ) && ! RCIN_ENABLED ) {
+			return;
+		}
+
+		$store       = \RestCacheInvalidation\Store_Factory::make();
+		$key_builder = new \RestCacheInvalidation\Key_Builder( $store );
+		$rest_cache  = new \RestCacheInvalidation\Rest_Cache( $store, $key_builder );
+		$invalidator = new \RestCacheInvalidation\Invalidator( $store );
+
+		$rest_cache->register();
+		$invalidator->register();
+
+		// WP-CLI command.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			\WP_CLI::add_command(
+				'rest-cache',
+				new \RestCacheInvalidation\CLI\Command( $store )
+			);
+		}
 	}
-
-	$store       = \RestCacheInvalidation\Store_Factory::make();
-	$key_builder = new \RestCacheInvalidation\Key_Builder( $store );
-	$rest_cache  = new \RestCacheInvalidation\Rest_Cache( $store, $key_builder );
-	$invalidator = new \RestCacheInvalidation\Invalidator( $store );
-
-	$rest_cache->register();
-	$invalidator->register();
-
-	// WP-CLI command.
-	if ( defined( 'WP_CLI' ) && WP_CLI ) {
-		\WP_CLI::add_command(
-			'rest-cache',
-			new \RestCacheInvalidation\CLI\Command( $store )
-		);
-	}
-} );
+);

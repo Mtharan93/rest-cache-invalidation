@@ -15,24 +15,40 @@ use RestCacheInvalidation\Key_Builder;
 use RestCacheInvalidation\Rest_Cache;
 use RestCacheInvalidation\Transient_Store;
 use WP_REST_Request;
-use WP_REST_Server;
 
 /**
- * Class Rest_CacheTest
+ * Class Rest_CacheTest.
  *
  * @group integration
  */
 class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
-	/** @var Transient_Store */
+	/**
+	 * Transient cache store.
+	 *
+	 * @var Transient_Store
+	 */
 	private Transient_Store $store;
 
-	/** @var Key_Builder */
+	/**
+	 * Cache key builder.
+	 *
+	 * @var Key_Builder
+	 */
 	private Key_Builder $key_builder;
 
-	/** @var Rest_Cache */
+	/**
+	 * REST cache handler under test.
+	 *
+	 * @var Rest_Cache
+	 */
 	private Rest_Cache $rest_cache;
 
+	/**
+	 * Set up cache handler and hooks before each test.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -42,18 +58,27 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		$this->rest_cache->register();
 	}
 
+	/**
+	 * Flush cache and clean up test hooks after each test.
+	 *
+	 * @return void
+	 */
 	protected function tearDown(): void {
 		$this->store->flush();
-		remove_all_filters( 'rci_cache_skip' );
-		remove_all_filters( 'rci_cache_key' );
-		remove_all_filters( 'rci_cache_ttl' );
+		remove_filter( 'rest_pre_dispatch', array( $this->rest_cache, 'serve' ), 10 );
+		remove_filter( 'rest_post_dispatch', array( $this->rest_cache, 'store_response' ), 10 );
+		remove_all_filters( 'rcin_cache_skip' );
+		remove_all_filters( 'rcin_cache_key' );
+		remove_all_filters( 'rcin_cache_ttl' );
 		parent::tearDown();
 	}
 
-	// ── Miss → Hit ────────────────────────────────────────────────────────────
+	// Miss to hit tests.
 
 	/**
 	 * First request: MISS header. Second identical request: HIT header.
+	 *
+	 * @return void
 	 */
 	public function test_miss_then_hit(): void {
 		$this->factory->post->create( array( 'post_status' => 'publish' ) );
@@ -69,24 +94,28 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	/**
 	 * X-Cache-TTL header must be present on a HIT and be a non-negative integer.
+	 *
+	 * @return void
 	 */
 	public function test_hit_includes_ttl_header(): void {
 		$this->factory->post->create( array( 'post_status' => 'publish' ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
-		$this->server->dispatch( $request ); // prime MISS
+		$this->server->dispatch( $request ); // Prime MISS.
 
-		$response = $this->server->dispatch( $request ); // HIT
+		$response = $this->server->dispatch( $request ); // HIT.
 		$ttl      = $response->get_headers()['X-Cache-TTL'] ?? null;
 
 		$this->assertNotNull( $ttl );
 		$this->assertGreaterThanOrEqual( 0, (int) $ttl );
 	}
 
-	// ── Key uniqueness ────────────────────────────────────────────────────────
+	// Key uniqueness tests.
 
 	/**
 	 * Different query params must produce a MISS on the second request.
+	 *
+	 * @return void
 	 */
 	public function test_different_query_params_produce_cache_miss(): void {
 		$this->factory->post->create( array( 'post_status' => 'publish' ) );
@@ -102,10 +131,12 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		$this->assertSame( 'MISS', $resp2->get_headers()['X-Cache'] ?? null );
 	}
 
-	// ── Auth bypass ───────────────────────────────────────────────────────────
+	// Auth bypass tests.
 
 	/**
 	 * Requests from a logged-in user must never be cached.
+	 *
+	 * @return void
 	 */
 	public function test_authenticated_requests_are_not_cached(): void {
 		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
@@ -121,6 +152,8 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	/**
 	 * Requests with a nonce query param must not be cached.
+	 *
+	 * @return void
 	 */
 	public function test_nonce_in_query_bypasses_cache(): void {
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
@@ -130,20 +163,24 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		$this->assertArrayNotHasKey( 'X-Cache', $response->get_headers() );
 	}
 
-	// ── Non-GET bypass ────────────────────────────────────────────────────────
+	// Non-GET bypass tests.
 
 	/**
 	 * POST requests must never be cached.
+	 *
+	 * @return void
 	 */
 	public function test_post_method_is_not_cached(): void {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
 		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
-		$request->set_body_params( array(
-			'title'  => 'Test Post',
-			'status' => 'publish',
-		) );
+		$request->set_body_params(
+			array(
+				'title'  => 'Test Post',
+				'status' => 'publish',
+			)
+		);
 
 		$response = $this->server->dispatch( $request );
 
@@ -152,10 +189,12 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		wp_set_current_user( 0 );
 	}
 
-	// ── Non-200 bypass ────────────────────────────────────────────────────────
+	// Non-200 bypass tests.
 
 	/**
 	 * Non-200 responses (e.g. 404) must not be cached.
+	 *
+	 * @return void
 	 */
 	public function test_404_response_is_not_cached(): void {
 		$request  = new WP_REST_Request( 'GET', '/wp/v2/posts/999999' );
@@ -165,8 +204,7 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		$headers = $response->get_headers();
 		// Either no X-Cache header, or X-Cache: MISS but no second HIT stored.
 		if ( isset( $headers['X-Cache'] ) && 'MISS' === $headers['X-Cache'] ) {
-			// The response was categorised as a MISS but status is 404 —
-			// post_dispatch must have aborted storage. Verify by re-requesting.
+			// The response was categorised as a MISS but status is 404; post_dispatch must have aborted storage.
 			$response2 = $this->server->dispatch( $request );
 			// Should still be MISS, never HIT.
 			$this->assertNotSame( 'HIT', $response2->get_headers()['X-Cache'] ?? 'MISS' );
@@ -176,13 +214,15 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		}
 	}
 
-	// ── skip filter ───────────────────────────────────────────────────────────
+	// Skip filter tests.
 
 	/**
-	 * When rci_cache_skip returns true, the response must not be cached.
+	 * When rcin_cache_skip returns true, the response must not be cached.
+	 *
+	 * @return void
 	 */
 	public function test_skip_filter_prevents_caching(): void {
-		add_filter( 'rci_cache_skip', '__return_true' );
+		add_filter( 'rcin_cache_skip', '__return_true' );
 
 		$this->factory->post->create( array( 'post_status' => 'publish' ) );
 
@@ -192,10 +232,12 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 		$this->assertArrayNotHasKey( 'X-Cache', $response->get_headers() );
 	}
 
-	// ── Invalidation ─────────────────────────────────────────────────────────
+	// Invalidation tests.
 
 	/**
 	 * After save_post, a previously cached posts response must be a MISS.
+	 *
+	 * @return void
 	 */
 	public function test_cache_invalidated_after_save_post(): void {
 		$post_id = $this->factory->post->create( array( 'post_status' => 'publish' ) );
@@ -216,6 +258,8 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	/**
 	 * After deleted_post, cached response becomes a MISS.
+	 *
+	 * @return void
 	 */
 	public function test_cache_invalidated_after_deleted_post(): void {
 		$post_id = $this->factory->post->create( array( 'post_status' => 'publish' ) );
@@ -231,6 +275,8 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	/**
 	 * After edited_term, cached terms response becomes a MISS.
+	 *
+	 * @return void
 	 */
 	public function test_cache_invalidated_after_term_change(): void {
 		$term = $this->factory->term->create( array( 'taxonomy' => 'category' ) );

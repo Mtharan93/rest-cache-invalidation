@@ -3,7 +3,7 @@
  * Key_Builder — builds deterministic cache keys for REST API responses.
  *
  * Key structure:
- *   rci/{group_version}/{namespace_hash}/{route_hash}/{params_hash}
+ *   rcin/{group_version}/{namespace_hash}/{route_hash}/{params_hash}
  *
  * - group_version  : integer fetched from the store; bumping it makes all old
  *                    keys for that group permanently unreachable.
@@ -23,16 +23,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Key_Builder
+ * Class Key_Builder.
  */
 class Key_Builder {
 
 	/**
 	 * The active cache store (used to read the current group version).
 	 *
-	 * @var Object_Cache_Store|Transient_Store
+	 * @var Cache_Store
 	 */
-	private Object_Cache_Store|Transient_Store $store;
+	private Cache_Store $store;
 
 	/**
 	 * Constructor.
@@ -40,20 +40,17 @@ class Key_Builder {
 	 * @param Cache_Store $store The active cache store implementation.
 	 */
 	public function __construct( Cache_Store $store ) {
-		// We accept Cache_Store but need the concrete version methods.
-		// Both implementations expose get_group_version(), so we store as-is
-		// and call it via method (PHP resolves this at runtime).
-		$this->store = $store; // @phpstan-ignore-line
+		$this->store = $store;
 	}
 
 	/**
 	 * Build a cache key for a REST request.
 	 *
-	 * Applies the `rci_cache_key` filter so site operators can customise the
+	 * Applies the `rcin_cache_key` filter so site operators can customise the
 	 * key (e.g. add a locale segment for multilingual sites).
 	 *
-	 * @param \WP_REST_Request $request       The REST request.
-	 * @param string           $group         Cache group ('posts', 'terms', …).
+	 * @param \WP_REST_Request $request The REST request.
+	 * @param string           $group   Cache group ('posts', 'terms', …).
 	 * @return string The cache key.
 	 */
 	public function build( \WP_REST_Request $request, string $group ): string {
@@ -66,7 +63,7 @@ class Key_Builder {
 		ksort( $params );
 
 		$key = sprintf(
-			'rci/%d/%s/%s/%s',
+			'rcin/%d/%s/%s/%s',
 			$version,
 			md5( $namespace ),
 			md5( $route ),
@@ -83,7 +80,7 @@ class Key_Builder {
 		 * @param \WP_REST_Request $request The current request.
 		 * @param string           $group   The cache group.
 		 */
-		return (string) apply_filters( 'rci_cache_key', $key, $request, $group );
+		return (string) apply_filters( 'rcin_cache_key', $key, $request, $group );
 	}
 
 	/**
@@ -105,8 +102,8 @@ class Key_Builder {
 	 */
 	public function group_for_route( string $route ): string {
 		$patterns = array(
-			'#^/wp/v\d+/comments#' => 'comments',
-			'#^/wp/v\d+/users#'    => 'users',
+			'#^/wp/v\d+/comments#'                         => 'comments',
+			'#^/wp/v\d+/users#'                            => 'users',
 			'#^/wp/v\d+/(tags|categories|taxonomies|terms)#' => 'terms',
 		);
 
@@ -116,14 +113,14 @@ class Key_Builder {
 			}
 		}
 
-		// posts is the default — covers /posts, /pages, /media, /types, etc.
+		// Posts is the default — covers /posts, /pages, /media, /types, etc.
 		return 'posts';
 	}
 
 	/**
 	 * Extract the namespace segment from a route.
 	 *
-	 * e.g. "/wp/v2/posts/42" → "wp/v2"
+	 * Example: "/wp/v2/posts/42" → "wp/v2".
 	 *
 	 * @param string $route Full route string including leading slash.
 	 * @return string Namespace string.

@@ -14,7 +14,7 @@
  *
  * Trade-off: stale cached data remains in the store until TTL elapses. For
  * most WordPress sites with a 5-minute TTL this is acceptable; operators
- * who need stricter freshness should lower the TTL via RCI_TTL.
+ * who need stricter freshness should lower the TTL via RCIN_TTL.
  *
  * @package RestCacheInvalidation
  */
@@ -27,40 +27,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Invalidator
+ * Class Invalidator.
  */
 class Invalidator {
 
 	/**
 	 * All known cache groups and the hooks that invalidate them.
 	 *
+	 * Keys are group names; values map hook_name => priority.
+	 *
 	 * @var array<string, array<string, int>>
-	 *   Keys: group name. Values: array of hook_name => priority.
 	 */
 	public const GROUP_HOOKS = array(
-		'posts' => array(
-			'save_post'                => 10,
-			'deleted_post'             => 10,
-			'transition_post_status'   => 10,
-			'attachment_updated'       => 10,
+		'posts'    => array(
+			'save_post'              => 10,
+			'deleted_post'           => 10,
+			'transition_post_status' => 10,
+			'attachment_updated'     => 10,
 		),
-		'terms' => array(
-			'edited_term'              => 10,
-			'delete_term'              => 10,
-			'set_object_terms'         => 10,
-			'created_term'             => 10,
+		'terms'    => array(
+			'edited_term'      => 10,
+			'delete_term'      => 10,
+			'set_object_terms' => 10,
+			'created_term'     => 10,
 		),
-		'users' => array(
-			'profile_update'           => 10,
-			'user_register'            => 10,
-			'deleted_user'             => 10,
+		'users'    => array(
+			'profile_update' => 10,
+			'user_register'  => 10,
+			'deleted_user'   => 10,
 		),
 		'comments' => array(
-			'comment_post'             => 10,
-			'edit_comment'             => 10,
-			'delete_comment'           => 10,
-			'wp_set_comment_status'    => 10,
-			'trash_comment'            => 10,
+			'comment_post'          => 10,
+			'edit_comment'          => 10,
+			'delete_comment'        => 10,
+			'wp_set_comment_status' => 10,
+			'trash_comment'         => 10,
 		),
 	);
 
@@ -74,9 +75,9 @@ class Invalidator {
 	/**
 	 * Active cache store.
 	 *
-	 * @var Object_Cache_Store|Transient_Store
+	 * @var Cache_Store
 	 */
-	private Object_Cache_Store|Transient_Store $store;
+	private Cache_Store $store;
 
 	/**
 	 * Constructor.
@@ -84,7 +85,7 @@ class Invalidator {
 	 * @param Cache_Store $store Active cache store.
 	 */
 	public function __construct( Cache_Store $store ) {
-		$this->store = $store; // @phpstan-ignore-line
+		$this->store = $store;
 	}
 
 	/**

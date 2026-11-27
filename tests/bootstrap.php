@@ -2,22 +2,82 @@
 /**
  * PHPUnit bootstrap for REST Cache Invalidation tests.
  *
- * Loads the WordPress test suite (provided by wp-env / the wordpress-develop
- * test scaffold) and then loads the plugin so its classes are available.
- *
- * Environment variable WP_TESTS_DIR must point to the WordPress test library.
- * @wordpress/env sets this automatically when running `wp-env run tests-cli`.
+ * Supports both:
+ * - Unit tests (`--testsuite unit`): runs on the host using Composer/Brain\Monkey
+ *   without requiring WordPress core or a database.
+ * - Integration tests (`--testsuite integration`): loads the WordPress test suite
+ *   (provided by wp-env / wordpress-develop) and then loads the plugin.
  *
  * @package RestCacheInvalidation\Tests
  */
 
 // phpcs:disable WordPress.NamingConventions
 
+require_once dirname( __DIR__ ) . '/vendor/autoload.php';
+
+$_argv         = $_SERVER['argv'] ?? array();
+$_is_unit_only = false;
+
+foreach ( $_argv as $_idx => $_arg ) {
+	if ( '--testsuite=unit' === $_arg ) {
+		$_is_unit_only = true;
+		break;
+	}
+	if ( '--testsuite' === $_arg && isset( $_argv[ $_idx + 1 ] ) && 'unit' === $_argv[ $_idx + 1 ] ) {
+		$_is_unit_only = true;
+		break;
+	}
+	if ( str_contains( str_replace( '\\', '/', (string) $_arg ), 'tests/unit' ) ) {
+		$_is_unit_only = true;
+		break;
+	}
+}
+
+if ( $_is_unit_only ) {
+	if ( ! defined( 'ABSPATH' ) ) {
+		define( 'ABSPATH', dirname( __DIR__ ) . '/' );
+	}
+
+	if ( ! class_exists( 'WP_REST_Request' ) ) {
+		/**
+		 * Minimal WP_REST_Request stub so PHPUnit can mock its methods without WordPress.
+		 */
+		class WP_REST_Request {
+			/**
+			 * Get the matched route.
+			 *
+			 * @return string
+			 */
+			public function get_route(): string {
+				return '';
+			}
+
+			/**
+			 * Get query parameters.
+			 *
+			 * @return array<string, mixed>
+			 */
+			public function get_query_params(): array {
+				return array();
+			}
+		}
+	}
+
+	return;
+}
+
+if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__ ) . '/vendor/yoast/phpunit-polyfills' );
+}
+
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 
 if ( ! $_tests_dir ) {
-	// Fallback for local wp-env usage.
-	$_tests_dir = '/tmp/wordpress-tests-lib';
+	if ( file_exists( '/wordpress-phpunit/includes/functions.php' ) ) {
+		$_tests_dir = '/wordpress-phpunit';
+	} else {
+		$_tests_dir = '/tmp/wordpress-tests-lib';
+	}
 }
 
 if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {

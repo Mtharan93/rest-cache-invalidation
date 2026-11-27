@@ -23,7 +23,7 @@ class Store_Factory {
 	/**
 	 * Build and return the appropriate Cache_Store implementation.
 	 *
-	 * @return Cache_Store
+	 * @return Cache_Store Active cache store instance.
 	 */
 	public static function make(): Cache_Store {
 		if ( wp_using_ext_object_cache() ) {

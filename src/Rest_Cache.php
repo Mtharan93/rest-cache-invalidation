@@ -43,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Rest_Cache {
 
 	/**
-	 * Default TTL in seconds (5 minutes). Override with RCI_TTL constant.
+	 * Default TTL in seconds (5 minutes). Override with RCIN_TTL constant.
 	 */
 	private const DEFAULT_TTL = 300;
 
@@ -103,7 +103,7 @@ class Rest_Cache {
 	 * @param \WP_REST_Request $request Incoming request.
 	 * @return mixed WP_REST_Response on HIT, original $result on MISS.
 	 */
-	public function serve( mixed $result, \WP_REST_Server $server, \WP_REST_Request $request ): mixed {
+	public function serve( mixed $result, \WP_REST_Server $server, \WP_REST_Request $request ): mixed { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Required by WordPress rest_pre_dispatch filter signature.
 		// Another filter already short-circuited; respect that.
 		if ( null !== $result ) {
 			return $result;
@@ -154,7 +154,7 @@ class Rest_Cache {
 	 * @param \WP_REST_Request  $request The original request.
 	 * @return \WP_REST_Response The (possibly header-modified) response.
 	 */
-	public function store_response( \WP_REST_Response $result, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_REST_Response {
+	public function store_response( \WP_REST_Response $result, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_REST_Response { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Required by WordPress rest_post_dispatch filter signature.
 		// Only store if pre_dispatch set a pending key (cacheable MISS).
 		if ( null === $this->pending_key ) {
 			return $result;
@@ -166,16 +166,15 @@ class Rest_Cache {
 			return $result;
 		}
 
-		$ttl = $this->get_ttl( $request );
+		$ttl = $this->get_ttl();
 
-		// Allow per-request TTL override.
 		/**
 		 * Filters the cache TTL for this specific request.
 		 *
 		 * @param int              $ttl     TTL in seconds.
 		 * @param \WP_REST_Request $request The current request.
 		 */
-		$ttl = (int) apply_filters( 'rci_cache_ttl', $ttl, $request );
+		$ttl = (int) apply_filters( 'rcin_cache_ttl', $ttl, $request );
 
 		if ( $ttl <= 0 ) {
 			$this->pending_key = null;
@@ -218,7 +217,7 @@ class Rest_Cache {
 			return false;
 		}
 
-		// wp/v2 namespace only.
+		// Cache wp/v2 namespace only.
 		$route = $request->get_route();
 		if ( ! str_starts_with( ltrim( $route, '/' ), self::CACHED_NAMESPACE_PREFIX ) ) {
 			return false;
@@ -237,7 +236,7 @@ class Rest_Cache {
 		 * @param bool             $skip    Whether to skip caching. Default false.
 		 * @param \WP_REST_Request $request The current request.
 		 */
-		if ( (bool) apply_filters( 'rci_cache_skip', false, $request ) ) {
+		if ( (bool) apply_filters( 'rcin_cache_skip', false, $request ) ) {
 			return false;
 		}
 
@@ -281,12 +280,11 @@ class Rest_Cache {
 	/**
 	 * Resolve the configured TTL.
 	 *
-	 * @param \WP_REST_Request $request Incoming request (unused here, available for filter).
 	 * @return int TTL in seconds.
 	 */
-	private function get_ttl( \WP_REST_Request $request ): int {
-		if ( defined( 'RCI_TTL' ) && is_int( RCI_TTL ) && RCI_TTL > 0 ) {
-			return RCI_TTL;
+	private function get_ttl(): int {
+		if ( defined( 'RCIN_TTL' ) && is_int( RCIN_TTL ) && RCIN_TTL > 0 ) {
+			return RCIN_TTL;
 		}
 
 		return self::DEFAULT_TTL;

@@ -8,8 +8,8 @@
  * environments but should be replaced by a persistent object cache in
  * production.
  *
- * Key prefix: rci_c_   (cached responses)
- * Version prefix: rci_v_ stored as options (not transients) so they survive
+ * Key prefix: rcin_c_   (cached responses)
+ * Version prefix: rcin_v_ stored as options (not transients) so they survive
  * transient flush operations.
  *
  * @package RestCacheInvalidation
@@ -23,33 +23,48 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Transient_Store
+ * Class Transient_Store.
  */
 class Transient_Store implements Cache_Store {
 
 	/**
 	 * Prefix for all cached-response transient keys.
 	 */
-	private const KEY_PREFIX = 'rci_c_';
+	private const KEY_PREFIX = 'rcin_c_';
 
 	/**
 	 * Option name for persisting hit/miss counters across requests.
 	 */
-	private const STATS_OPTION = 'rci_stats';
+	private const STATS_OPTION = 'rcin_stats';
 
-	/** @inheritDoc */
+	/**
+	 * Retrieve a cached value.
+	 *
+	 * @param string $key Cache key.
+	 * @return mixed Cached value or false on miss.
+	 */
 	public function get( string $key ): mixed {
-		$value = get_transient( self::KEY_PREFIX . $key );
-
-		return $value;
+		return get_transient( self::KEY_PREFIX . $key );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Store a value in the cache.
+	 *
+	 * @param string $key   Cache key.
+	 * @param mixed  $value Value to store. Must be serialisable.
+	 * @param int    $ttl   Time to live in seconds. 0 means no expiry.
+	 * @return bool True on success, false on failure.
+	 */
 	public function set( string $key, mixed $value, int $ttl = 0 ): bool {
 		return set_transient( self::KEY_PREFIX . $key, $value, $ttl );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Delete a single entry.
+	 *
+	 * @param string $key Cache key.
+	 * @return bool True on success.
+	 */
 	public function delete( string $key ): bool {
 		return delete_transient( self::KEY_PREFIX . $key );
 	}
@@ -61,12 +76,12 @@ class Transient_Store implements Cache_Store {
 	 * the options table with a prepared LIKE statement — the only safe way to
 	 * do this without introducing raw SQL or depending on private APIs.
 	 *
-	 * @inheritDoc
+	 * @return bool True on success.
 	 */
 	public function flush(): bool {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- WordPress has no core API to flush transients by key prefix.
 		$keys = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -75,16 +90,24 @@ class Transient_Store implements Cache_Store {
 		);
 
 		foreach ( $keys as $option_name ) {
-			$transient_key = str_replace( '_transient_', '', $option_name );
+			$transient_key = substr( $option_name, strlen( '_transient_' ) );
 			delete_transient( $transient_key );
 		}
 
 		return true;
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Return aggregate statistics.
+	 *
+	 * @return array{hits: int, misses: int, group_versions: array<string, int>} Cache statistics.
+	 */
 	public function stats(): array {
 		$raw = get_option( self::STATS_OPTION, array() );
+
+		if ( ! is_array( $raw ) ) {
+			$raw = array();
+		}
 
 		return array(
 			'hits'           => (int) ( $raw['hits'] ?? 0 ),
@@ -93,12 +116,20 @@ class Transient_Store implements Cache_Store {
 		);
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Increment the hit counter.
+	 *
+	 * @return void
+	 */
 	public function increment_hits(): void {
 		$this->increment_stat( 'hits' );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * Increment the miss counter.
+	 *
+	 * @return void
+	 */
 	public function increment_misses(): void {
 		$this->increment_stat( 'misses' );
 	}
@@ -106,12 +137,12 @@ class Transient_Store implements Cache_Store {
 	/**
 	 * Read version counters for all groups from options.
 	 *
-	 * @return array<string, int>
+	 * @return array<string, int> Map of group name to version number.
 	 */
 	public function get_group_versions(): array {
 		$versions = array();
 		foreach ( Invalidator::GROUPS as $group ) {
-			$v                = (int) get_option( 'rci_v_' . $group, 1 );
+			$v                  = (int) get_option( 'rcin_v_' . $group, 1 );
 			$versions[ $group ] = $v > 0 ? $v : 1;
 		}
 		return $versions;
@@ -121,10 +152,10 @@ class Transient_Store implements Cache_Store {
 	 * Get the current version for a single group.
 	 *
 	 * @param string $group Group name.
-	 * @return int
+	 * @return int Current group version.
 	 */
 	public function get_group_version( string $group ): int {
-		$v = (int) get_option( 'rci_v_' . $group, 1 );
+		$v = (int) get_option( 'rcin_v_' . $group, 1 );
 		return $v > 0 ? $v : 1;
 	}
 
@@ -140,7 +171,7 @@ class Transient_Store implements Cache_Store {
 	public function bump_group_version( string $group ): int {
 		$current = $this->get_group_version( $group );
 		$next    = $current + 1;
-		update_option( 'rci_v_' . $group, $next, false );
+		update_option( 'rcin_v_' . $group, $next, false );
 		return $next;
 	}
 

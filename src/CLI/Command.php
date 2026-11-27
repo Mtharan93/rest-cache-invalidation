@@ -80,7 +80,7 @@ class Command {
 	 * @param list<string>         $args       Positional arguments (unused).
 	 * @param array<string, mixed> $assoc_args Associative arguments.
 	 */
-	public function stats( array $args, array $assoc_args ): void {
+	public function stats( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Required by WP-CLI subcommand callback signature.
 		$data   = $this->store->stats();
 		$format = \WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'table' );
 

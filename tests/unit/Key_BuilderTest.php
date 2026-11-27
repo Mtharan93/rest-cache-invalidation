@@ -13,20 +13,33 @@ namespace RestCacheInvalidation\Tests\Unit;
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
-use RestCacheInvalidation\Key_Builder;
 use RestCacheInvalidation\Cache_Store;
+use RestCacheInvalidation\Key_Builder;
 
 /**
- * Class Key_BuilderTest
+ * Class Key_BuilderTest.
  */
 class Key_BuilderTest extends TestCase {
 
-	/** @var Cache_Store&\PHPUnit\Framework\MockObject\MockObject */
+	/**
+	 * Mocked cache store.
+	 *
+	 * @var Cache_Store&\PHPUnit\Framework\MockObject\MockObject
+	 */
 	private Cache_Store $store;
 
-	/** @var Key_Builder */
+	/**
+	 * Key builder instance under test.
+	 *
+	 * @var Key_Builder
+	 */
 	private Key_Builder $builder;
 
+	/**
+	 * Set up Brain\Monkey and mocked store before each test.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
@@ -40,6 +53,11 @@ class Key_BuilderTest extends TestCase {
 		$this->builder = new Key_Builder( $this->store );
 	}
 
+	/**
+	 * Tear down Brain\Monkey after each test.
+	 *
+	 * @return void
+	 */
 	protected function tearDown(): void {
 		Monkey\tearDown();
 		parent::tearDown();
@@ -47,6 +65,8 @@ class Key_BuilderTest extends TestCase {
 
 	/**
 	 * Keys for the same route but different sorted params must differ.
+	 *
+	 * @return void
 	 */
 	public function test_key_differs_by_query_params(): void {
 		$request_a = $this->make_request( '/wp/v2/posts', array( 'per_page' => 10 ) );
@@ -59,11 +79,25 @@ class Key_BuilderTest extends TestCase {
 	}
 
 	/**
-	 * Parameter ORDER must NOT affect the key (?a=1&b=2 == ?b=2&a=1).
+	 * Parameter order must not affect the key (?a=1&b=2 == ?b=2&a=1).
+	 *
+	 * @return void
 	 */
 	public function test_key_is_order_independent(): void {
-		$request_a = $this->make_request( '/wp/v2/posts', array( 'a' => '1', 'b' => '2' ) );
-		$request_b = $this->make_request( '/wp/v2/posts', array( 'b' => '2', 'a' => '1' ) );
+		$request_a = $this->make_request(
+			'/wp/v2/posts',
+			array(
+				'a' => '1',
+				'b' => '2',
+			)
+		);
+		$request_b = $this->make_request(
+			'/wp/v2/posts',
+			array(
+				'b' => '2',
+				'a' => '1',
+			)
+		);
 
 		$key_a = $this->builder->build( $request_a, 'posts' );
 		$key_b = $this->builder->build( $request_b, 'posts' );
@@ -73,6 +107,8 @@ class Key_BuilderTest extends TestCase {
 
 	/**
 	 * Keys for different routes must differ.
+	 *
+	 * @return void
 	 */
 	public function test_key_differs_by_route(): void {
 		$request_posts = $this->make_request( '/wp/v2/posts', array() );
@@ -86,6 +122,8 @@ class Key_BuilderTest extends TestCase {
 
 	/**
 	 * When the group version changes the key must change.
+	 *
+	 * @return void
 	 */
 	public function test_key_changes_on_version_bump(): void {
 		$store_v1 = $this->createMock( Cache_Store::class );
@@ -106,25 +144,35 @@ class Key_BuilderTest extends TestCase {
 	}
 
 	/**
-	 * Key must start with the rci/ prefix.
+	 * Key must start with the rcin/ prefix.
+	 *
+	 * @return void
 	 */
 	public function test_key_has_expected_prefix(): void {
 		$request = $this->make_request( '/wp/v2/posts', array() );
 		$key     = $this->builder->build( $request, 'posts' );
 
-		$this->assertStringStartsWith( 'rci/', $key );
+		$this->assertStringStartsWith( 'rcin/', $key );
 	}
 
 	/**
-	 * group_for_route routing table tests.
+	 * Verify group_for_route routing table mapping.
 	 *
 	 * @dataProvider route_group_provider
+	 *
+	 * @param string $route          REST route path.
+	 * @param string $expected_group Expected invalidation group.
+	 * @return void
 	 */
 	public function test_group_for_route( string $route, string $expected_group ): void {
 		$this->assertSame( $expected_group, $this->builder->group_for_route( $route ) );
 	}
 
-	/** @return array<array{string, string}> */
+	/**
+	 * Provide REST routes and expected invalidation groups.
+	 *
+	 * @return array<array{string, string}> List of route and group pairs.
+	 */
 	public static function route_group_provider(): array {
 		return array(
 			array( '/wp/v2/posts', 'posts' ),
@@ -141,7 +189,7 @@ class Key_BuilderTest extends TestCase {
 		);
 	}
 
-	// ── Helpers ───────────────────────────────────────────────────────────────
+	// Helpers.
 
 	/**
 	 * Build a minimal WP_REST_Request stub.

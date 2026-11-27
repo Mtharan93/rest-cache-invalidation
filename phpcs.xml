@@ -19,6 +19,22 @@
     <exclude name="Universal.Operators.DisallowShortTernary"/>
   </rule>
 
+  <!-- PSR-4 autoloaded classes and PHPUnit test classes cannot use class-*.php naming -->
+  <rule ref="WordPress.Files.FileName">
+    <exclude-pattern>*/src/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+  </rule>
+
+  <!-- Allowed global prefixes for constants, hooks, and global variables -->
+  <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+    <properties>
+      <property name="prefixes" type="array">
+        <element value="rcin"/>
+        <element value="rest_cache_invalidation"/>
+      </property>
+    </properties>
+  </rule>
+
   <!-- Require proper file doc comment -->
   <rule ref="Squiz.Commenting.FileComment"/>
 
