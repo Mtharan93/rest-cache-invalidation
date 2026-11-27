@@ -182,7 +182,7 @@ happen to share the same key structure.
    cache after each invalidation.
 
 5. **wp/v2 namespace only.** Custom REST namespaces are not cached by default.
-   This can be changed via the `rest_cache_key` / `rest_cache_skip` filters.
+   This can be changed via the `rci_cache_key` / `rci_cache_skip` filters.
 
 6. **No benchmark numbers are included.** The performance impact is entirely
    dependent on your server, database, and object-cache setup. If you need
@@ -263,18 +263,18 @@ All configuration is via PHP constants and WordPress filters.
 
 | Constant | Type | Default | Description |
 |----------|------|---------|-------------|
-| `REST_CACHE_ENABLED` | bool | `true` | Set to `false` to disable the plugin entirely without deactivating it |
-| `REST_CACHE_TTL` | int | `300` | Cache time-to-live in seconds |
+| `RCI_ENABLED` | bool | `true` | Set to `false` to disable the plugin entirely without deactivating it |
+| `RCI_TTL` | int | `300` | Cache time-to-live in seconds |
 
 ### Filters
 
-#### `rest_cache_skip`
+#### `rci_cache_skip`
 
 Return `true` to bypass caching for a specific request.
 
 ```php
 // Don't cache the /wp/v2/users endpoint at all.
-add_filter( 'rest_cache_skip', function ( bool $skip, WP_REST_Request $request ): bool {
+add_filter( 'rci_cache_skip', function ( bool $skip, WP_REST_Request $request ): bool {
     if ( str_starts_with( $request->get_route(), '/wp/v2/users' ) ) {
         return true;
     }
@@ -282,24 +282,24 @@ add_filter( 'rest_cache_skip', function ( bool $skip, WP_REST_Request $request )
 }, 10, 2 );
 ```
 
-#### `rest_cache_key`
+#### `rci_cache_key`
 
 Modify the computed cache key. Useful for adding locale or A/B segments.
 
 ```php
 // Add the current locale to separate caches per language.
-add_filter( 'rest_cache_key', function ( string $key, WP_REST_Request $request ): string {
+add_filter( 'rci_cache_key', function ( string $key, WP_REST_Request $request ): string {
     return $key . '/' . get_locale();
 }, 10, 2 );
 ```
 
-#### `rest_cache_ttl`
+#### `rci_cache_ttl`
 
 Override the TTL per-request.
 
 ```php
 // Cache post-list responses for 10 minutes, everything else uses the default.
-add_filter( 'rest_cache_ttl', function ( int $ttl, WP_REST_Request $request ): int {
+add_filter( 'rci_cache_ttl', function ( int $ttl, WP_REST_Request $request ): int {
     if ( '/wp/v2/posts' === $request->get_route() ) {
         return 600;
     }

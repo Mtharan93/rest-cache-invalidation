@@ -43,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Rest_Cache {
 
 	/**
-	 * Default TTL in seconds (5 minutes). Override with REST_CACHE_TTL constant.
+	 * Default TTL in seconds (5 minutes). Override with RCI_TTL constant.
 	 */
 	private const DEFAULT_TTL = 300;
 
@@ -175,7 +175,7 @@ class Rest_Cache {
 		 * @param int              $ttl     TTL in seconds.
 		 * @param \WP_REST_Request $request The current request.
 		 */
-		$ttl = (int) apply_filters( 'rest_cache_ttl', $ttl, $request );
+		$ttl = (int) apply_filters( 'rci_cache_ttl', $ttl, $request );
 
 		if ( $ttl <= 0 ) {
 			$this->pending_key = null;
@@ -237,7 +237,7 @@ class Rest_Cache {
 		 * @param bool             $skip    Whether to skip caching. Default false.
 		 * @param \WP_REST_Request $request The current request.
 		 */
-		if ( (bool) apply_filters( 'rest_cache_skip', false, $request ) ) {
+		if ( (bool) apply_filters( 'rci_cache_skip', false, $request ) ) {
 			return false;
 		}
 
@@ -285,8 +285,8 @@ class Rest_Cache {
 	 * @return int TTL in seconds.
 	 */
 	private function get_ttl( \WP_REST_Request $request ): int {
-		if ( defined( 'REST_CACHE_TTL' ) && is_int( REST_CACHE_TTL ) && REST_CACHE_TTL > 0 ) {
-			return REST_CACHE_TTL;
+		if ( defined( 'RCI_TTL' ) && is_int( RCI_TTL ) && RCI_TTL > 0 ) {
+			return RCI_TTL;
 		}
 
 		return self::DEFAULT_TTL;

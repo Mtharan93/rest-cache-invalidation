@@ -20,9 +20,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'REST_CACHE_VERSION', '0.1.0' );
-define( 'REST_CACHE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'REST_CACHE_PLUGIN_FILE', __FILE__ );
+define( 'RCI_VERSION', '0.1.0' );
+define( 'RCI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'RCI_PLUGIN_FILE', __FILE__ );
 
 /**
  * PSR-4 autoloader for the RestCacheInvalidation namespace.
@@ -31,7 +31,7 @@ define( 'REST_CACHE_PLUGIN_FILE', __FILE__ );
  */
 spl_autoload_register( static function ( string $class ): void {
 	$prefix   = 'RestCacheInvalidation\\';
-	$base_dir = REST_CACHE_PLUGIN_DIR . 'src/';
+	$base_dir = RCI_PLUGIN_DIR . 'src/';
 
 	if ( ! str_starts_with( $class, $prefix ) ) {
 		return;
@@ -52,7 +52,7 @@ spl_autoload_register( static function ( string $class ): void {
  */
 add_action( 'plugins_loaded', static function (): void {
 	// Allow disabling the plugin entirely via constant.
-	if ( defined( 'REST_CACHE_ENABLED' ) && ! REST_CACHE_ENABLED ) {
+	if ( defined( 'RCI_ENABLED' ) && ! RCI_ENABLED ) {
 		return;
 	}
 

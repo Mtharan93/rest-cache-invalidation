@@ -49,7 +49,7 @@ class Key_Builder {
 	/**
 	 * Build a cache key for a REST request.
 	 *
-	 * Applies the `rest_cache_key` filter so site operators can customise the
+	 * Applies the `rci_cache_key` filter so site operators can customise the
 	 * key (e.g. add a locale segment for multilingual sites).
 	 *
 	 * @param \WP_REST_Request $request       The REST request.
@@ -83,7 +83,7 @@ class Key_Builder {
 		 * @param \WP_REST_Request $request The current request.
 		 * @param string           $group   The cache group.
 		 */
-		return (string) apply_filters( 'rest_cache_key', $key, $request, $group );
+		return (string) apply_filters( 'rci_cache_key', $key, $request, $group );
 	}
 
 	/**

@@ -44,9 +44,9 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	protected function tearDown(): void {
 		$this->store->flush();
-		remove_all_filters( 'rest_cache_skip' );
-		remove_all_filters( 'rest_cache_key' );
-		remove_all_filters( 'rest_cache_ttl' );
+		remove_all_filters( 'rci_cache_skip' );
+		remove_all_filters( 'rci_cache_key' );
+		remove_all_filters( 'rci_cache_ttl' );
 		parent::tearDown();
 	}
 
@@ -179,10 +179,10 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 	// ── skip filter ───────────────────────────────────────────────────────────
 
 	/**
-	 * When rest_cache_skip returns true, the response must not be cached.
+	 * When rci_cache_skip returns true, the response must not be cached.
 	 */
 	public function test_skip_filter_prevents_caching(): void {
-		add_filter( 'rest_cache_skip', '__return_true' );
+		add_filter( 'rci_cache_skip', '__return_true' );
 
 		$this->factory->post->create( array( 'post_status' => 'publish' ) );
 

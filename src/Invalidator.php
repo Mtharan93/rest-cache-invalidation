@@ -14,7 +14,7 @@
  *
  * Trade-off: stale cached data remains in the store until TTL elapses. For
  * most WordPress sites with a 5-minute TTL this is acceptable; operators
- * who need stricter freshness should lower the TTL via REST_CACHE_TTL.
+ * who need stricter freshness should lower the TTL via RCI_TTL.
  *
  * @package RestCacheInvalidation
  */
