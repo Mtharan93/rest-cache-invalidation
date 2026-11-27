@@ -1,5 +1,5 @@
 {
-  "name": "rest-cache-invalidation",
+  "name": "mtharan93/rest-cache-invalidation",
   "description": "Cache public WordPress REST API GET responses with correct invalidation.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
