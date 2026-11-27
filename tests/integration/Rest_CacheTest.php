@@ -24,6 +24,13 @@ use WP_REST_Request;
 class Rest_CacheTest extends \WP_Test_REST_TestCase {
 
 	/**
+	 * REST server instance.
+	 *
+	 * @var \WP_REST_Server
+	 */
+	private \WP_REST_Server $server;
+
+	/**
 	 * Transient cache store.
 	 *
 	 * @var Transient_Store
@@ -45,13 +52,14 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 	private Rest_Cache $rest_cache;
 
 	/**
-	 * Set up cache handler and hooks before each test.
+	 * Set up REST server, cache handler, and hooks before each test.
 	 *
 	 * @return void
 	 */
-	protected function setUp(): void {
-		parent::setUp();
+	public function set_up(): void {
+		parent::set_up();
 
+		$this->server      = rest_get_server();
 		$this->store       = new Transient_Store();
 		$this->key_builder = new Key_Builder( $this->store );
 		$this->rest_cache  = new Rest_Cache( $this->store, $this->key_builder );
@@ -63,14 +71,14 @@ class Rest_CacheTest extends \WP_Test_REST_TestCase {
 	 *
 	 * @return void
 	 */
-	protected function tearDown(): void {
+	public function tear_down(): void {
 		$this->store->flush();
 		remove_filter( 'rest_pre_dispatch', array( $this->rest_cache, 'serve' ), 10 );
 		remove_filter( 'rest_post_dispatch', array( $this->rest_cache, 'store_response' ), 10 );
 		remove_all_filters( 'rcin_cache_skip' );
 		remove_all_filters( 'rcin_cache_key' );
 		remove_all_filters( 'rcin_cache_ttl' );
-		parent::tearDown();
+		parent::tear_down();
 	}
 
 	// Miss to hit tests.

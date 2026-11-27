@@ -196,7 +196,7 @@ class Key_BuilderTest extends TestCase {
 	 *
 	 * @param string               $route  Route string.
 	 * @param array<string, mixed> $params Query params.
-	 * @return \WP_REST_Request&\PHPUnit\Framework\MockObject\MockObject
+	 * @return \WP_REST_Request&\PHPUnit\Framework\MockObject\MockObject Mocked REST request.
 	 */
 	private function make_request( string $route, array $params ): \WP_REST_Request {
 		$request = $this->createMock( \WP_REST_Request::class );

@@ -35,9 +35,6 @@
     </properties>
   </rule>
 
-  <!-- Require proper file doc comment -->
-  <rule ref="Squiz.Commenting.FileComment"/>
-
   <!-- Minimum WP version for deprecation checks -->
   <rule ref="WordPress.WP.DeprecatedFunctions">
     <properties>

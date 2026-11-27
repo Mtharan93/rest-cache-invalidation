@@ -102,8 +102,8 @@ class Key_Builder {
 	 */
 	public function group_for_route( string $route ): string {
 		$patterns = array(
-			'#^/wp/v\d+/comments#'                         => 'comments',
-			'#^/wp/v\d+/users#'                            => 'users',
+			'#^/wp/v\d+/comments#'                           => 'comments',
+			'#^/wp/v\d+/users#'                              => 'users',
 			'#^/wp/v\d+/(tags|categories|taxonomies|terms)#' => 'terms',
 		);
 
