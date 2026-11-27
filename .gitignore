@@ -1,0 +1,28 @@
+# ── Composer ──────────────────────────────────────────────────────────────────
+/vendor/
+composer.lock
+
+# ── Node / wp-env ─────────────────────────────────────────────────────────────
+/node_modules/
+/.wp-env/
+package-lock.json
+yarn.lock
+
+# ── PHPUnit ───────────────────────────────────────────────────────────────────
+/coverage/
+/.phpunit.result.cache
+/.phpunit.cache/
+
+# ── PHPCS ─────────────────────────────────────────────────────────────────────
+/.phpcs-cache
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# ── WordPress (when checked out locally for reference) ────────────────────────
+/wordpress/
